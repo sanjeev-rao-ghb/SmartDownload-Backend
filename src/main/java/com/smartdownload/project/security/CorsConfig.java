@@ -16,22 +16,22 @@ public class CorsConfig {
 
         CorsConfiguration config = new CorsConfiguration();
 
-        // React app origin
-        config.setAllowedOrigins(List.of("http://localhost:5173"));
+        config.setAllowedOrigins(List.of(
+                "http://localhost:5173",
+                "https://smart-download-beta.vercel.app"
+        ));
 
-        // Allowed HTTP methods
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of(
+                "GET", "POST", "PUT", "DELETE", "OPTIONS"
+        ));
 
-        // Allowed headers
         config.setAllowedHeaders(List.of("*"));
 
-        // Allow sending JWT in headers
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
 
-        // Apply this CORS config to all endpoints
         source.registerCorsConfiguration("/**", config);
 
         return source;
