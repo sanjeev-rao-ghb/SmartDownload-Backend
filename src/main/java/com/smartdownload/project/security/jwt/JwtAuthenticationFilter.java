@@ -19,50 +19,54 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    @Autowired
-    private JwtUtil jwtUtil;
+```
+@Autowired
+private JwtUtil jwtUtil;
 
-    @Autowired
-    private CustomUserDetailsService userDetailsService;
+@Autowired
+private CustomUserDetailsService userDetailsService;
 
-    @Override
-    protected void doFilterInternal(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain
-    ) throws ServletException, IOException {
+@Override
+protected void doFilterInternal(
+        HttpServletRequest request,
+        HttpServletResponse response,
+        FilterChain filterChain
+) throws ServletException, IOException {
 
-        String path = request.getRequestURI();
+    // ✅ Allow CORS preflight requests
+    if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+        response.setStatus(HttpServletResponse.SC_OK);
+        filterChain.doFilter(request, response);
+        return;
+    }
 
-        // ✅ PUBLIC ENDPOINTS — JWT NOT REQUIRED
-        if (
-            path.startsWith("/api/auth/")
-            || path.equals("/api/projects/public")
-        ) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+    String path = request.getRequestURI();
 
-        // 🔐 JWT REQUIRED BELOW
-        String authHeader = request.getHeader("Authorization");
+    // ✅ Public endpoints
+    if (
+        path.startsWith("/api/auth/")
+        || path.equals("/api/projects/public")
+        || path.startsWith("/api/projects/image/")
+    ) {
+        filterChain.doFilter(request, response);
+        return;
+    }
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+    String authHeader = request.getHeader("Authorization");
 
+    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        filterChain.doFilter(request, response);
+        return;
+    }
 
-        String token = authHeader.substring(7);
-        String email;
+    String token = authHeader.substring(7);
 
-        try {
-            email = jwtUtil.extractUsername(token);
-        } catch (Exception e) {
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            return;
-        }
+    try {
 
-        if (SecurityContextHolder.getContext().getAuthentication() == null) {
+        String email = jwtUtil.extractUsername(token);
+
+        if (email != null &&
+            SecurityContextHolder.getContext().getAuthentication() == null) {
 
             var userDetails =
                     userDetailsService.loadUserByUsername(email);
@@ -86,6 +90,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
-        filterChain.doFilter(request, response);
+    } catch (Exception e) {
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        return;
     }
+
+    filterChain.doFilter(request, response);
+}
+```
+
 }
