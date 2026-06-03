@@ -17,7 +17,6 @@ public class AuthController {
     @Autowired
     private AuthService authService;
 
-    // ✅ REGISTER API (DTO based)
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
 
@@ -28,7 +27,6 @@ public class AuthController {
         );
     }
 
-    // ✅ LOGIN API (JWT)
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
 
@@ -36,6 +34,19 @@ public class AuthController {
 
         return ResponseEntity.ok(
                 Map.of("token", token)
+        );
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(
+            @RequestBody Map<String, String> request) {
+
+        String email = request.get("email");
+
+        authService.forgotPassword(email);
+
+        return ResponseEntity.ok(
+                Map.of("message", "Password reset email sent successfully")
         );
     }
 }
