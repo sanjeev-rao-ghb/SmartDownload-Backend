@@ -1,6 +1,8 @@
 package com.smartdownload.project.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -23,7 +25,10 @@ public class AuthService {
     @Autowired
     private JwtUtil jwtUtil;
 
-    // ✅ REGISTER (ROLE SUPPORT ADDED)
+    @Autowired
+    private JavaMailSender mailSender;
+
+    // REGISTER
     public void register(RegisterRequest request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -35,7 +40,6 @@ public class AuthService {
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        // 🆕 ROLE HANDLING
         if ("ADMIN".equalsIgnoreCase(request.getRole())) {
             user.setRole(Role.ADMIN);
         } else {
@@ -45,7 +49,7 @@ public class AuthService {
         userRepository.save(user);
     }
 
-    // ✅ LOGIN (JWT with ROLE)
+    // LOGIN
     public String login(LoginRequest loginRequest) {
 
         User user = userRepository.findByEmail(loginRequest.getEmail())
@@ -61,5 +65,25 @@ public class AuthService {
                 user.getEmail(),
                 user.getRole().name()
         );
+    }
+
+    // FORGOT PASSWORD
+    public void forgotPassword(String email) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        SimpleMailMessage message = new SimpleMailMessage();
+
+        message.setTo(email);
+        message.setSubject("Password Reset Request");
+        message.setText(
+                "Hello " + user.getName() +
+                "\n\nWe received a password reset request for your account." +
+                "\n\nIf you requested this change, please contact support or implement a reset-password link." +
+                "\n\nThank you."
+        );
+
+        mailSender.send(message);
     }
 }
